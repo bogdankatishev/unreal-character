@@ -8,6 +8,27 @@
 #include "GameFramework/Character.h"
 #include "unreal_characterCharacter.generated.h"
 
+UENUM(BlueprintType)
+enum class EMovementStatus : uint8
+{
+	EMS_Normal UMETA(DisplayName = "Normal"),
+	EMS_Sprinting UMETA(DisplayName = "Sprinting"),
+	EMS_Dead UMETA(DisplayName = "Dead"),
+
+	EMS_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
+UENUM(BlueprintType)
+enum class EStaminaStatus : uint8
+{
+	ESS_Normal UMETA(DisplayName = "Normal"),
+	ESS_BelowMinimum UMETA(DisplayName = "BelowMinimum"),
+	ESS_Exhausted UMETA(DisplayName = "Exhausted"),
+	ESS_ExhaustedRecovering UMETA(DisplayName = "ExhaustedRecovering"),
+
+	ESS_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
 UCLASS(config=Game)
 class Aunreal_characterCharacter : public ACharacter
 {
@@ -38,8 +59,12 @@ protected:
 	/** Called for forwards/backward input */
 	void MoveForward(float Value);
 
+	bool bMovingForward;
+
 	/** Called for side to side input */
 	void MoveRight(float Value);
+
+	bool bMovingRight;
 
 	/** 
 	 * Called via input to turn at a given rate. 
@@ -71,19 +96,63 @@ public:
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enums")
+	EMovementStatus MovementStatus;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enums")
+	EStaminaStatus StaminaStatus;
+
+	FORCEINLINE void SetStaminaStatus(EStaminaStatus Status) { StaminaStatus = Status; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float StaminaDrainRate;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float MinSprintStamina;
+
+	/** Set movement status and running speed */
+	void SetMovementStatus(EMovementStatus Status);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Running")
+	float RunningSpeed;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Running")
+	float SprintingSpeed;
+
+	bool bShiftKeyDown;
+
+	/** Pressed down to enable sprinting */
+	void ShiftKeyDown();
+
+	/** Released down to stop sprinting */
+	void ShiftKeyUp();
+
+	/** Player Stats */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerStats")
 	float FullHealth;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerStats")
 	float Health;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerStats")
 	float HealthPercentage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerStats")
 	float PreviousHealth;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
+	float MaxStamina;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
+	float Stamina;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerStats")
+	float StaminaPercentage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerStats")
+	float PreviousStamina;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerStats")
 	float redFlash;
 
 	FTimeline MyTimeline;
@@ -94,12 +163,20 @@ public:
 	bool bCanBeDamaged;
 
 	/** Get Health */
-	UFUNCTION(BlueprintPure, Category = "Health")
+	UFUNCTION(BlueprintPure, Category = "PlayerStats")
 	float GetHealth();
 
 	/** Get Health Text */
-	UFUNCTION(BlueprintPure, Category = "Health")
+	UFUNCTION(BlueprintPure, Category = "PlayerStats")
 	FText GetHealthIntText();
+
+	/** Get Stamina */
+	UFUNCTION(BlueprintPure, Category = "PlayerStats")
+	float GetStamina();
+
+	/** Get Stamina Text */
+	UFUNCTION(BlueprintPure, Category = "PlayerStats")
+	FText GetStaminaIntText();
 
 	/** Damage Timer */
 	UFUNCTION()
@@ -113,8 +190,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Power")
 	void UpdateHealth(float HealthChange);
 
+	/** Update Stamina */
+	UFUNCTION(BlueprintCallable, Category = "Power")
+	void UpdateStaminaPercentage();
+
 	/** Play Flash */
-	UFUNCTION(BlueprintPure, Category = "Health")
+	UFUNCTION(BlueprintPure, Category = "PlayerStats")
 	bool PlayFlash();
 
 };

@@ -62,7 +62,28 @@ void Aunreal_characterCharacter::BeginPlay()
 	Health = FullHealth;
 	HealthPercentage = 1.0f;
 	PreviousHealth = HealthPercentage;
+	
+	MaxStamina = 1000.0f;
+	Stamina = MaxStamina;
+	StaminaPercentage = 1.0f;
+	PreviousStamina = StaminaPercentage;
+	
 	bCanBeDamaged = true;
+
+	RunningSpeed = 650.f;
+	SprintingSpeed = 950.f;
+
+	bShiftKeyDown = false;
+
+	// Initialize Enums
+	MovementStatus = EMovementStatus::EMS_Normal;
+	StaminaStatus = EStaminaStatus::ESS_Normal;
+
+	StaminaDrainRate = 25.f;
+	MinSprintStamina = 50.f;
+
+	bMovingForward = false;
+	bMovingRight = false;
 }
 
 void Aunreal_characterCharacter::Tick(float DeltaTime)
@@ -70,6 +91,113 @@ void Aunreal_characterCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	MyTimeline.TickTimeline(DeltaTime);	
+
+	float DeltaStamina = StaminaDrainRate * DeltaTime;
+
+	switch (StaminaStatus)
+	{
+	case EStaminaStatus::ESS_Normal:
+		if (bShiftKeyDown)
+		{
+			if (Stamina - DeltaStamina <= MinSprintStamina)
+			{
+				SetStaminaStatus(EStaminaStatus::ESS_BelowMinimum);
+				Stamina -= DeltaStamina;
+			}
+			else
+			{
+				Stamina -= DeltaStamina;
+			}
+			
+			if (bMovingForward || bMovingRight)
+			{
+				SetMovementStatus(EMovementStatus::EMS_Sprinting);
+			}
+			else
+			{
+				SetMovementStatus(EMovementStatus::EMS_Normal);
+			}
+		}
+		else // Shift key up
+		{
+			if (Stamina + DeltaStamina >= MaxStamina)
+			{
+				Stamina = MaxStamina;
+			}
+			else
+			{
+				Stamina += DeltaStamina;
+			}
+			SetMovementStatus(EMovementStatus::EMS_Normal);
+		}
+		break;
+
+	case EStaminaStatus::ESS_BelowMinimum:
+		if (bShiftKeyDown)
+		{
+			if (Stamina - DeltaStamina <= 0.f)
+			{
+				SetStaminaStatus(EStaminaStatus::ESS_Exhausted);
+				Stamina = 0.f;
+				SetMovementStatus(EMovementStatus::EMS_Normal);
+			}
+			else
+			{
+				Stamina -= DeltaStamina;
+				if (bMovingForward || bMovingRight)
+				{
+					SetMovementStatus(EMovementStatus::EMS_Sprinting);
+				}
+				else
+				{
+					SetMovementStatus(EMovementStatus::EMS_Normal);
+				}
+			}
+		}
+		else // Shift key up
+		{
+			if (Stamina + DeltaStamina >= MinSprintStamina)
+			{
+				SetStaminaStatus(EStaminaStatus::ESS_Normal);
+				Stamina += DeltaStamina;
+			}
+			else
+			{
+				Stamina += DeltaStamina;
+			}
+			SetMovementStatus(EMovementStatus::EMS_Normal);
+		}
+		break;
+
+	case EStaminaStatus::ESS_Exhausted:
+		if (bShiftKeyDown)
+		{
+			Stamina = 0.f;
+		}
+		else // Shift key up
+		{
+			SetStaminaStatus(EStaminaStatus::ESS_ExhaustedRecovering);
+			Stamina += DeltaStamina;
+		}
+		SetMovementStatus(EMovementStatus::EMS_Normal);
+		break;
+
+	case EStaminaStatus::ESS_ExhaustedRecovering:
+		if (Stamina + DeltaStamina >= MinSprintStamina)
+		{
+			SetStaminaStatus(EStaminaStatus::ESS_Normal);
+			Stamina += DeltaStamina;
+		}
+		else
+		{
+			Stamina += DeltaStamina;
+		}
+		SetMovementStatus(EMovementStatus::EMS_Normal);
+		break;
+
+	default:
+		;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -81,6 +209,9 @@ void Aunreal_characterCharacter::SetupPlayerInputComponent(class UInputComponent
 	check(PlayerInputComponent);
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &Aunreal_characterCharacter::ShiftKeyDown);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &Aunreal_characterCharacter::ShiftKeyUp);
 
 	PlayerInputComponent->BindAxis("Move Forward / Backward", this, &Aunreal_characterCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("Move Right / Left", this, &Aunreal_characterCharacter::MoveRight);
@@ -122,6 +253,8 @@ void Aunreal_characterCharacter::LookUpAtRate(float Rate)
 
 void Aunreal_characterCharacter::MoveForward(float Value)
 {
+	bMovingForward = false;
+
 	if ((Controller != nullptr) && (Value != 0.0f))
 	{
 		// find out which way is forward
@@ -131,11 +264,15 @@ void Aunreal_characterCharacter::MoveForward(float Value)
 		// get forward vector
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		AddMovementInput(Direction, Value);
+
+		bMovingForward = true;
 	}
 }
 
 void Aunreal_characterCharacter::MoveRight(float Value)
 {
+	bMovingRight = false;
+
 	if ( (Controller != nullptr) && (Value != 0.0f) )
 	{
 		// find out which way is right
@@ -146,6 +283,8 @@ void Aunreal_characterCharacter::MoveRight(float Value)
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		// add movement in that direction
 		AddMovementInput(Direction, Value);
+
+		bMovingRight = true;
 	}
 }
 
@@ -161,6 +300,21 @@ FText Aunreal_characterCharacter::GetHealthIntText()
 	FString HealthHUD = HPS + FString(TEXT("%"));
 	FText HPText = FText::FromString(HealthHUD);
 	return HPText;
+}
+
+float Aunreal_characterCharacter::GetStamina()
+{
+	UpdateStaminaPercentage();
+	return StaminaPercentage;
+}
+
+FText Aunreal_characterCharacter::GetStaminaIntText()
+{
+	int32 ST = FMath::RoundHalfFromZero(StaminaPercentage * 100);
+	FString STS = FString::FromInt(ST);
+	FString StaminaHUD = STS + FString(TEXT("%"));
+	FText StaminaText = FText::FromString(StaminaHUD);
+	return StaminaText;
 }
 
 void Aunreal_characterCharacter::SetDamageState()
@@ -199,4 +353,34 @@ void Aunreal_characterCharacter::UpdateHealth(float HealthChange)
 	Health = FMath::Clamp(Health, 0.0f, FullHealth);
 	PreviousHealth = HealthPercentage;
 	HealthPercentage = Health/FullHealth;
+}
+
+void Aunreal_characterCharacter::UpdateStaminaPercentage()
+{
+	PreviousStamina = StaminaPercentage;
+	StaminaPercentage = FMath::Clamp(Stamina, 0.0f, MaxStamina)/MaxStamina;
+}
+
+void Aunreal_characterCharacter::ShiftKeyDown()
+{
+	bShiftKeyDown = true;
+}
+
+void Aunreal_characterCharacter::ShiftKeyUp()
+{
+	bShiftKeyDown = false;
+}
+
+void Aunreal_characterCharacter::SetMovementStatus(EMovementStatus Status)
+{
+	MovementStatus = Status;
+	if (MovementStatus == EMovementStatus::EMS_Sprinting)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = SprintingSpeed;
+	}
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed = RunningSpeed;
+	}
+
 }
