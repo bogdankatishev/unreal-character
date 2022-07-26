@@ -2,6 +2,8 @@
 
 #include "unreal_characterGameMode.h"
 #include "MainHUD.h"
+#include "MainPlayerController.h"
+#include "unreal_characterCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -18,6 +20,9 @@ Aunreal_characterGameMode::Aunreal_characterGameMode()
 
 	// use our custom HUD class
 	HUDClass = AMainHUD::StaticClass();
+
+	// use our custom Player Controller class
+	PlayerControllerClass = AMainPlayerController::StaticClass();
 }
 
 void Aunreal_characterGameMode::BeginPlay()

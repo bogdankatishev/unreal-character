@@ -22,7 +22,7 @@ public:
 
 	virtual void BeginPlay() override;
 
-private:
+public:
 	UPROPERTY(EditAnywhere, Category = "Health")
 	TSubclassOf<class UUserWidget> HUDWidgetClass;
 

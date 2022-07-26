@@ -30,6 +30,13 @@
 				"Mac",
 				"Linux"
 			]
+		},
+		{
+			"Name": "FSR2",
+			"Enabled": true,
+			"SupportedTargetPlatforms": [
+				"Win64"
+			]
 		}
 	]
 }
