@@ -49,8 +49,6 @@ public:
 	float TurnRateGamepad;
 
 protected:
-	virtual void BeginPlay();
-
 	virtual void Tick(float DeltaTime) override;
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const & DamageEvent, class AController * EventInstigator, AActor * DamageCauser);
@@ -128,35 +126,34 @@ public:
 	void ShiftKeyUp();
 
 	/** Player Stats */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerStats")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerStats")
 	float FullHealth;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerStats")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
 	float Health;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerStats")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
 	float HealthPercentage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerStats")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
 	float PreviousHealth;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerStats")
 	float MaxStamina;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
 	float Stamina;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerStats")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
 	float StaminaPercentage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerStats")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
 	float PreviousStamina;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlayerStats")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
 	float redFlash;
 
 	FTimeline MyTimeline;
-	float CurveFloatValue;
 	float TimelineValue;
 	FTimerHandle MemberTimerHandle;
 
