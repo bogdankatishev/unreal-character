@@ -19,12 +19,18 @@ public:
 	class UButton* ResumeButton;
 
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	class UButton* SaveGameButton;
+
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	class UButton* QuitButton;
 
 	virtual void NativeConstruct() override;
 
 	UFUNCTION()
 	void OnResumeClick();
+
+	UFUNCTION()
+	void OnSaveGameClick();
 
 	UFUNCTION()
 	void OnQuitClick();

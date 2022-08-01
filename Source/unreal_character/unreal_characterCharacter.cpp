@@ -9,6 +9,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "TimerManager.h"
+#include "AttributeComponent.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Aunreal_characterCharacter
@@ -51,16 +52,6 @@ Aunreal_characterCharacter::Aunreal_characterCharacter()
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
-
-	FullHealth = 1000.0f;
-	Health = FullHealth;
-	HealthPercentage = 1.0f;
-	PreviousHealth = HealthPercentage;
-	
-	MaxStamina = 1000.0f;
-	Stamina = MaxStamina;
-	StaminaPercentage = 1.0f;
-	PreviousStamina = StaminaPercentage;
 	
 	bCanBeDamaged = true;
 
@@ -73,11 +64,21 @@ Aunreal_characterCharacter::Aunreal_characterCharacter()
 	MovementStatus = EMovementStatus::EMS_Normal;
 	StaminaStatus = EStaminaStatus::ESS_Normal;
 
-	StaminaDrainRate = 25.f;
-	MinSprintStamina = 50.f;
+	StaminaDrainRate = 250.f;
+	MinSprintStamina = 500.f;
 
 	bMovingForward = false;
 	bMovingRight = false;
+
+	AttributeComp = CreateDefaultSubobject<UAttributeComponent>("AttributeComp");
+}
+
+void Aunreal_characterCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	AttributeComp->OnHealthChanged.AddDynamic(this, &Aunreal_characterCharacter::OnHealthChanged);
+	AttributeComp->OnStaminaChanged.AddDynamic(this, &Aunreal_characterCharacter::OnStaminaChanged);
 }
 
 void Aunreal_characterCharacter::Tick(float DeltaTime)
@@ -93,14 +94,14 @@ void Aunreal_characterCharacter::Tick(float DeltaTime)
 	case EStaminaStatus::ESS_Normal:
 		if (bShiftKeyDown)
 		{
-			if (Stamina - DeltaStamina <= MinSprintStamina)
+			if (AttributeComp->GetStamina() - DeltaStamina <= MinSprintStamina)
 			{
 				SetStaminaStatus(EStaminaStatus::ESS_BelowMinimum);
-				Stamina -= DeltaStamina;
+				AttributeComp->ApplyStaminaChange(this, -DeltaStamina);
 			}
 			else
 			{
-				Stamina -= DeltaStamina;
+				AttributeComp->ApplyStaminaChange(this, -DeltaStamina);
 			}
 			
 			if (bMovingForward || bMovingRight)
@@ -114,13 +115,13 @@ void Aunreal_characterCharacter::Tick(float DeltaTime)
 		}
 		else // Shift key up
 		{
-			if (Stamina + DeltaStamina >= MaxStamina)
+			if (AttributeComp->GetStamina() + DeltaStamina >= AttributeComp->GetStaminaMax())
 			{
-				Stamina = MaxStamina;
+				AttributeComp->ApplyStaminaChange(this, AttributeComp->GetStaminaMax());
 			}
 			else
 			{
-				Stamina += DeltaStamina;
+				AttributeComp->ApplyStaminaChange(this, DeltaStamina);
 			}
 			SetMovementStatus(EMovementStatus::EMS_Normal);
 		}
@@ -129,15 +130,15 @@ void Aunreal_characterCharacter::Tick(float DeltaTime)
 	case EStaminaStatus::ESS_BelowMinimum:
 		if (bShiftKeyDown)
 		{
-			if (Stamina - DeltaStamina <= 0.f)
+			if (AttributeComp->GetStamina() - DeltaStamina <= 0.f)
 			{
 				SetStaminaStatus(EStaminaStatus::ESS_Exhausted);
-				Stamina = 0.f;
+				AttributeComp->ApplyStaminaChange(this, -AttributeComp->GetStaminaMax());
 				SetMovementStatus(EMovementStatus::EMS_Normal);
 			}
 			else
 			{
-				Stamina -= DeltaStamina;
+				AttributeComp->ApplyStaminaChange(this, -DeltaStamina);
 				if (bMovingForward || bMovingRight)
 				{
 					SetMovementStatus(EMovementStatus::EMS_Sprinting);
@@ -150,14 +151,14 @@ void Aunreal_characterCharacter::Tick(float DeltaTime)
 		}
 		else // Shift key up
 		{
-			if (Stamina + DeltaStamina >= MinSprintStamina)
+			if (AttributeComp->GetStamina() + DeltaStamina >= MinSprintStamina)
 			{
 				SetStaminaStatus(EStaminaStatus::ESS_Normal);
-				Stamina += DeltaStamina;
+				AttributeComp->ApplyStaminaChange(this, DeltaStamina);
 			}
 			else
 			{
-				Stamina += DeltaStamina;
+				AttributeComp->ApplyStaminaChange(this, DeltaStamina);
 			}
 			SetMovementStatus(EMovementStatus::EMS_Normal);
 		}
@@ -166,25 +167,25 @@ void Aunreal_characterCharacter::Tick(float DeltaTime)
 	case EStaminaStatus::ESS_Exhausted:
 		if (bShiftKeyDown)
 		{
-			Stamina = 0.f;
+			AttributeComp->ApplyStaminaChange(this, -AttributeComp->GetStaminaMax());
 		}
 		else // Shift key up
 		{
 			SetStaminaStatus(EStaminaStatus::ESS_ExhaustedRecovering);
-			Stamina += DeltaStamina;
+			AttributeComp->ApplyStaminaChange(this, DeltaStamina);
 		}
 		SetMovementStatus(EMovementStatus::EMS_Normal);
 		break;
 
 	case EStaminaStatus::ESS_ExhaustedRecovering:
-		if (Stamina + DeltaStamina >= MinSprintStamina)
+		if (AttributeComp->GetStamina() + DeltaStamina >= MinSprintStamina)
 		{
 			SetStaminaStatus(EStaminaStatus::ESS_Normal);
-			Stamina += DeltaStamina;
+			AttributeComp->ApplyStaminaChange(this, DeltaStamina);
 		}
 		else
 		{
-			Stamina += DeltaStamina;
+			AttributeComp->ApplyStaminaChange(this, DeltaStamina);
 		}
 		SetMovementStatus(EMovementStatus::EMS_Normal);
 		break;
@@ -282,35 +283,6 @@ void Aunreal_characterCharacter::MoveRight(float Value)
 	}
 }
 
-float Aunreal_characterCharacter::GetHealth()
-{
-	return HealthPercentage;
-}
-
-FText Aunreal_characterCharacter::GetHealthIntText()
-{
-	int32 HP = FMath::RoundHalfFromZero(HealthPercentage * 100);
-	FString HPS = FString::FromInt(HP);
-	FString HealthHUD = HPS + FString(TEXT("%"));
-	FText HPText = FText::FromString(HealthHUD);
-	return HPText;
-}
-
-float Aunreal_characterCharacter::GetStamina()
-{
-	UpdateStaminaPercentage();
-	return StaminaPercentage;
-}
-
-FText Aunreal_characterCharacter::GetStaminaIntText()
-{
-	int32 ST = FMath::RoundHalfFromZero(StaminaPercentage * 100);
-	FString STS = FString::FromInt(ST);
-	FString StaminaHUD = STS + FString(TEXT("%"));
-	FText StaminaText = FText::FromString(StaminaHUD);
-	return StaminaText;
-}
-
 void Aunreal_characterCharacter::SetDamageState()
 {
 	bCanBeDamaged = true;
@@ -330,29 +302,6 @@ bool Aunreal_characterCharacter::PlayFlash()
 	}
 
 	return false;
-}
-
-float Aunreal_characterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const & DamageEvent, class AController * EventInstigator, AActor * DamageCauser)
-{
-	bCanBeDamaged = false;
-	redFlash = true;
-	UpdateHealth(-DamageAmount);
-	DamageTimer();
-	return DamageAmount;
-}
-
-void Aunreal_characterCharacter::UpdateHealth(float HealthChange)
-{
-	Health += HealthChange;
-	Health = FMath::Clamp(Health, 0.0f, FullHealth);
-	PreviousHealth = HealthPercentage;
-	HealthPercentage = Health/FullHealth;
-}
-
-void Aunreal_characterCharacter::UpdateStaminaPercentage()
-{
-	PreviousStamina = StaminaPercentage;
-	StaminaPercentage = FMath::Clamp(Stamina, 0.0f, MaxStamina)/MaxStamina;
 }
 
 void Aunreal_characterCharacter::ShiftKeyDown()
@@ -376,5 +325,20 @@ void Aunreal_characterCharacter::SetMovementStatus(EMovementStatus Status)
 	{
 		GetCharacterMovement()->MaxWalkSpeed = RunningSpeed;
 	}
+
+}
+
+void Aunreal_characterCharacter::OnHealthChanged(AActor* InstigatorActor, UAttributeComponent* OwningComp, float NewHealth, float Delta)
+{
+	// Died
+	if (NewHealth <= 0.0f && Delta < 0.0f)
+	{
+		APlayerController* PC = Cast<APlayerController>(GetController());
+		DisableInput(PC);
+	}
+}
+
+void Aunreal_characterCharacter::OnStaminaChanged(AActor* InstigatorActor, UAttributeComponent* OwningComp, float NewStamina, float Delta)
+{
 
 }

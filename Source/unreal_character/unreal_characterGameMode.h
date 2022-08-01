@@ -22,6 +22,8 @@ class Aunreal_characterGameMode : public AGameModeBase
 	GENERATED_BODY()
 
 public:
+	virtual void OnActorKilled(AActor* VictimActor, AActor* Killer);
+
 	Aunreal_characterGameMode();
 
 	virtual void BeginPlay() override;
@@ -36,6 +38,10 @@ public:
 
 	/** Sets a new playing state */
 	void SetCurrentState(EGamePlayState NewState);
+
+	void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
+
+	void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
 
 private: 
 	/**Keeps track of the current playing state */

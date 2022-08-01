@@ -8,6 +8,8 @@
 #include "GameFramework/Character.h"
 #include "unreal_characterCharacter.generated.h"
 
+class UAttributeComponent;
+
 UENUM(BlueprintType)
 enum class EMovementStatus : uint8
 {
@@ -51,7 +53,8 @@ public:
 protected:
 	virtual void Tick(float DeltaTime) override;
 
-	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const & DamageEvent, class AController * EventInstigator, AActor * DamageCauser);
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UAttributeComponent* AttributeComp;
 
 protected:
 	/** Called for forwards/backward input */
@@ -125,31 +128,6 @@ public:
 	/** Released down to stop sprinting */
 	void ShiftKeyUp();
 
-	/** Player Stats */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerStats")
-	float FullHealth;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
-	float Health;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
-	float HealthPercentage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
-	float PreviousHealth;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PlayerStats")
-	float MaxStamina;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
-	float Stamina;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
-	float StaminaPercentage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
-	float PreviousStamina;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerStats")
 	float redFlash;
 
@@ -159,22 +137,6 @@ public:
 
 	bool bCanBeDamaged;
 
-	/** Get Health */
-	UFUNCTION(BlueprintPure, Category = "PlayerStats")
-	float GetHealth();
-
-	/** Get Health Text */
-	UFUNCTION(BlueprintPure, Category = "PlayerStats")
-	FText GetHealthIntText();
-
-	/** Get Stamina */
-	UFUNCTION(BlueprintPure, Category = "PlayerStats")
-	float GetStamina();
-
-	/** Get Stamina Text */
-	UFUNCTION(BlueprintPure, Category = "PlayerStats")
-	FText GetStaminaIntText();
-
 	/** Damage Timer */
 	UFUNCTION()
 	void DamageTimer();
@@ -183,17 +145,16 @@ public:
 	UFUNCTION()
 	void SetDamageState();
 
-	/** Update Health */
-	UFUNCTION(BlueprintCallable, Category = "Power")
-	void UpdateHealth(float HealthChange);
-
-	/** Update Stamina */
-	UFUNCTION(BlueprintCallable, Category = "Power")
-	void UpdateStaminaPercentage();
-
 	/** Play Flash */
 	UFUNCTION(BlueprintPure, Category = "PlayerStats")
 	bool PlayFlash();
 
+	UFUNCTION()
+	void OnHealthChanged(AActor* InstigatorActor, UAttributeComponent* OwningComp, float NewHealth, float Delta);
+
+	UFUNCTION()
+	void OnStaminaChanged(AActor* InstigatorActor, UAttributeComponent* OwningComp, float NewStamina, float Delta);
+
+	virtual void PostInitializeComponents() override;
 };
 

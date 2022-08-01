@@ -2,6 +2,7 @@
 
 
 #include "MedKit.h"
+#include "AttributeComponent.h"
 
 // Sets default values
 AMedKit::AMedKit()
@@ -13,12 +14,11 @@ void AMedKit::OnOverlap(AActor* MyOverlappedActor, AActor* OtherActor)
 {
 	if ( (OtherActor != nullptr ) && (OtherActor != this) ) 
 	{
-		MyCharacter = Cast<Aunreal_characterCharacter>(OtherActor);
-
-		if (MyCharacter && MyCharacter->GetHealth() < 1.0f)
+		UAttributeComponent* AttributeComp = UAttributeComponent::GetAttributes(OtherActor);
+		if (ensure(AttributeComp))
 		{
-			MyCharacter->UpdateHealth(100.0f);
+			AttributeComp->ApplyHealthChange(OtherActor, 100.0f);
 			Destroy();
-		}	
+		}
 	}
 }

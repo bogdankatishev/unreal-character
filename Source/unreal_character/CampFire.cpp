@@ -4,6 +4,8 @@
 #include "CampFire.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
+#include "AttributeComponent.h"
+#include "GameplayFunctionLibrary.h"
 
 // Sets default values
 ACampFire::ACampFire()
@@ -43,7 +45,8 @@ void ACampFire::ApplyFireDamage()
 {
     if(bCanApplyDamage)
     {
-        UGameplayStatics::ApplyPointDamage(MyCharacter, 200.0f, GetActorLocation(), MyHit, nullptr, this, FireDamageType);
+        UGameplayFunctionLibrary::ApplyDamage(this, MyCharacter, 200.0f);
+        // UGameplayStatics::ApplyPointDamage(MyCharacter, 200.0f, GetActorLocation(), MyHit, nullptr, this, FireDamageType);
     }
 }
 

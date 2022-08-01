@@ -3,11 +3,12 @@
 
 #include "MainHUD.h"
 #include "Blueprint/UserWidget.h"
+#include "MainHUDWidget.h"
 
 AMainHUD::AMainHUD()
 {
-	static ConstructorHelpers::FClassFinder<UUserWidget> HealthBarObj(TEXT("/Game/UI/Health_UI"));
-	HUDWidgetClass = HealthBarObj.Class;
+	static ConstructorHelpers::FClassFinder<UMainHUDWidget> MainHUDWidgetObj(TEXT("/Game/UI/BP_MainHUDWidget"));
+	HUDWidgetClass = MainHUDWidgetObj.Class;
 }
 
 void AMainHUD::DrawHUD()

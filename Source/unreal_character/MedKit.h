@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "unreal_characterCharacter.h"
 #include "MedKit.generated.h"
 
 UCLASS()
@@ -20,8 +19,5 @@ public:
 
 	UFUNCTION()
 	void OnOverlap(AActor* MyOverlappedActor, AActor* OtherActor);
-
-	UPROPERTY(EditAnywhere)
-	Aunreal_characterCharacter* MyCharacter;
 	
 };
