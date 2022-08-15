@@ -43,6 +43,10 @@ class Aunreal_characterCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
+
+	/** inventory */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Inventory, meta = (AllowPrivateAccess = "true"))
+	class UInventoryComponent* Inventory;
 public:
 	Aunreal_characterCharacter();
 
@@ -156,5 +160,8 @@ public:
 	void OnStaminaChanged(AActor* InstigatorActor, UAttributeComponent* OwningComp, float NewStamina, float Delta);
 
 	virtual void PostInitializeComponents() override;
+
+	UFUNCTION(BlueprintCallable, Category = "Items")
+	void UseItem(class UItem* Item);
 };
 

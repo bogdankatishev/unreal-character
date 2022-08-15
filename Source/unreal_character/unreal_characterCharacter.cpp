@@ -10,6 +10,8 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "TimerManager.h"
 #include "AttributeComponent.h"
+#include "Items/Item.h"
+#include "Items/InventoryComponent.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Aunreal_characterCharacter
@@ -71,6 +73,18 @@ Aunreal_characterCharacter::Aunreal_characterCharacter()
 	bMovingRight = false;
 
 	AttributeComp = CreateDefaultSubobject<UAttributeComponent>("AttributeComp");
+	Inventory = CreateDefaultSubobject<UInventoryComponent>("Inventory");
+	
+	Inventory->Capacity = 20;
+}
+
+void Aunreal_characterCharacter::UseItem(class  UItem* Item)
+{
+	if (Item)
+	{
+		Item->Use(this);
+		Item->OnUse(this); //bp event
+	}
 }
 
 void Aunreal_characterCharacter::PostInitializeComponents()
